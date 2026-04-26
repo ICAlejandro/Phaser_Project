@@ -90,7 +90,7 @@ function create() {
 
     player.anims.play('idle');
 
-    // star animation
+    // star animation loop
     this.anims.create({
         key: 'star_glow',
         frames: this.anims.generateFrameNumbers('star', { start: 0, end: 1 }),
@@ -118,9 +118,12 @@ function create() {
         fill: '#ffffff'
     });
 
-    // COLLISIONS
+    // collision
     this.physics.add.collider(player, platforms);
-    this.physics.add.collider(bombs, platforms); // ⭐ FIX: bombs hit platforms
+    this.physics.add.collider(bombs, platforms);
+
+    // star collder
+    this.physics.add.collider(stars, platforms);
 
     this.physics.add.overlap(player, stars, collectStar, null, this);
     this.physics.add.overlap(player, bombs, hitBomb, null, this);
@@ -157,7 +160,7 @@ function update() {
     }
 }
 
-// star spawn
+// spawn star
 function spawnStar(scene) {
     let x = Phaser.Math.Between(50, 750);
     let y = Phaser.Math.Between(80, 300);
@@ -186,8 +189,7 @@ function collectStar(player, star) {
         player.setScale(player.scale + 0.1);
     }
 
-    // spawn bomb
-    if (Phaser.Math.Between(0, 1)) {
+    if (Phaser.Math.Between(0, 7) === 0) {//bomb sapn rate
         let bomb = bombs.create(Phaser.Math.Between(50, 750), 50, 'bomb');
 
         bomb.setVelocity(Phaser.Math.Between(-200, 200), 20);
