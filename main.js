@@ -122,7 +122,7 @@ function create() {
     this.physics.add.collider(player, platforms);
     this.physics.add.collider(bombs, platforms);
 
-    // star collder
+    // star collider
     this.physics.add.collider(stars, platforms);
 
     this.physics.add.overlap(player, stars, collectStar, null, this);
@@ -189,7 +189,7 @@ function collectStar(player, star) {
         player.setScale(player.scale + 0.1);
     }
 
-    if (Phaser.Math.Between(0, 7) === 0) {//bomb sapn rate
+    if (Phaser.Math.Between(0, 7) === 0) {//bomb spawn rate
         let bomb = bombs.create(Phaser.Math.Between(50, 750), 50, 'bomb');
 
         bomb.setVelocity(Phaser.Math.Between(-200, 200), 20);
