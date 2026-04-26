@@ -29,9 +29,8 @@ let gameOver = false;
 
 function preload() {
     this.load.image('background', 'assets/background.png');
-
-    // 16x16 assets
     this.load.image('player', 'assets/player.png');
+
     this.load.image('star_1', 'assets/star_1.png');
     this.load.image('star_2', 'assets/star_2.png');
     this.load.image('star_3', 'assets/star_3.png');
@@ -44,20 +43,19 @@ function create() {
     // platform
     platforms = this.physics.add.staticGroup();
 
-    let ground = this.add.rectangle(400, 580, 800, 40, 0x00aa00);
+    let ground = this.add.rectangle(400, 550, 800, 40, 0x00aa00);
     this.physics.add.existing(ground, true);
     platforms.add(ground);
 
-    let floating = this.add.rectangle(400, 400, 200, 20, 0x00aa00);
-    this.physics.add.existing(floating, true);
-    platforms.add(floating);
+    let platform1 = this.add.rectangle(400, 400, 200, 20, 0x00aa00);
+    this.physics.add.existing(platform1, true);
+    platforms.add(platform1);
 
-    // player (16x16 scaled up)
+    // player (64x64 recommended asset size)
     player = this.physics.add.sprite(400, 450, 'player');
-    player.setScale(5); // 16x16 → 32x32 visual size
     player.setCollideWorldBounds(true);
 
-    // stars
+    // stars (24x24 recommended asset size)
     stars = this.physics.add.group();
 
     const positions = [
@@ -70,7 +68,8 @@ function create() {
 
     positions.forEach(pos => {
         let star = stars.create(pos.x, pos.y, 'star_1');
-        star.setScale(2); // 16x16 → 32x32 visual size
+
+        // fixed stars (no gravity)
         star.body.setAllowGravity(false);
         star.body.immovable = true;
     });
@@ -92,7 +91,7 @@ function create() {
         child.play('spin');
     });
 
-    // input
+    // input (WASD only)
     keys = this.input.keyboard.addKeys({
         W: Phaser.Input.Keyboard.KeyCodes.W,
         A: Phaser.Input.Keyboard.KeyCodes.A,
@@ -119,12 +118,12 @@ function update() {
 
     player.setVelocityX(0);
 
-    // left
+    // move left
     if (keys.A.isDown) {
         player.setVelocityX(-speed);
     }
 
-    // right
+    // move right
     else if (keys.D.isDown) {
         player.setVelocityX(speed);
     }
@@ -143,6 +142,7 @@ function collectStar(player, star) {
 
     console.log("Star collected");
 
+    // win condition
     if (score === 5) {
         gameOver = true;
 
