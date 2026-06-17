@@ -101,10 +101,9 @@ function create() {
     // groups
     stars = this.physics.add.group();
     bombs = this.physics.add.group();
-    // added spawn star for 2nd platform
+
     spawnStar(this);
     
-
     // input
     keys = this.input.keyboard.addKeys({
         A: Phaser.Input.Keyboard.KeyCodes.A,
@@ -190,12 +189,12 @@ function collectStar(player, star) {
         player.setScale(player.scale + 0.1);
     }
 
-    if (Phaser.Math.Between(0, 7) === 0) {//bomb spawn rate
-        let bomb = bombs.create(Phaser.Math.Between(50, 750), 50, 'bomb');
+    //if (Phaser.Math.Between(0, 7) === 0) {//bomb spawn rate
+        //let bomb = bombs.create(Phaser.Math.Between(50, 750), 50, 'bomb');
 
-        bomb.setVelocity(Phaser.Math.Between(-200, 200), 20);
-        bomb.setBounce(1);
-        bomb.setCollideWorldBounds(true);
+        //bomb.setVelocity(Phaser.Math.Between(-200, 200), 20);
+        //bomb.setBounce(1);
+        //bomb.setCollideWorldBounds(true);
     }
 }
 
