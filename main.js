@@ -29,9 +29,10 @@ let score = 0;
 let scoreText;
 let gameOver = false;
 
-// Life system variables
+// life system variables
 let lives = 3;
 let heartsGroup;
+let isHurt = false; // Flag to track if player is in the hurt state
 
 let colorIndex = 0;
 const colors = [0xff0000, 0xff7f00, 0xffff00, 0x00ff00, 0x0000ff, 0x4b0082, 0x8f00ff];
@@ -40,6 +41,7 @@ function preload() {
     this.load.image('background', 'assets/background.png');
     this.load.image('bomb', 'assets/bomb.png');
     this.load.image('gameOverScreen', 'assets/game_over_screen.png');
+    this.load.image('playerHurt', 'assets/player_hurt.png'); // Loaded the hurt image asset
 
     this.load.spritesheet('player', 'assets/player_spritesheet.png', {
         frameWidth: 64,
@@ -107,7 +109,7 @@ function create() {
         repeat: -1
     });
 
-    // Heart cycle animation loop
+    // heart animation loop
     this.anims.create({
         key: 'heart_pulse',
         frames: this.anims.generateFrameNumbers('heart', { start: 0, end: 1 }),
@@ -131,14 +133,14 @@ function create() {
 
     spaceKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
 
-    // UI - Hearts are above the star count
+    // heart counter
     heartsGroup = this.add.group();
     for (let i = 0; i < lives; i++) {
         let heart = heartsGroup.create(35 + (i * 70), 35, 'heart');
         heart.anims.play('heart_pulse');
     }
 
-    // UI - Star count placed under the hearts
+    // star counter
     scoreText = this.add.text(10, 75, 'Stars: 0', {
         fontSize: '20px',
         fill: '#1f5c21'
@@ -173,14 +175,17 @@ function update() {
         player.setVelocityY(-550);
     }
 
-    if (!player.body.touching.down) {
-        player.anims.play('jump', true);
-    }
-    else if (player.body.velocity.x !== 0) {
-        player.anims.play('run', true);
-    }
-    else {
-        player.anims.play('idle', true);
+    // only process state animation rules if the player is not recovering from a hit
+    if (!isHurt) {
+        if (!player.body.touching.down) {
+            player.anims.play('jump', true);
+        }
+        else if (player.body.velocity.x !== 0) {
+            player.anims.play('run', true);
+        }
+        else {
+            player.anims.play('idle', true);
+        }
     }
 }
 
@@ -197,7 +202,7 @@ function spawnStar(scene) {
     star.setCollideWorldBounds(true);
 }
 
-// Helper to guarantee at least one bomb is present when the game starts
+// one bomb start guarantee 
 function spawnInitialBomb() {
     let bomb = bombs.create(Phaser.Math.Between(50, 750), 50, 'bomb');
     bomb.setVelocity(Phaser.Math.Between(-200, 200), 20);
@@ -240,9 +245,21 @@ function hitBomb(player, bomb) {
     if (lives <= 0) {
         this.physics.pause();
         player.setVisible(false);
-
         gameOver = true;
-
         this.add.image(400, 300, 'gameOverScreen');
+    } else {
+        // get hurt state animation
+        isHurt = true;
+        player.anims.stop();
+        player.setTexture('playerHurt'); 
+
+        // get hit animation 
+        this.time.delayedCall(300, () => {
+            if (!gameOver) {
+                isHurt = false;
+                player.setTexture('player'); 
+                player.anims.play('idle', true); 
+            }
+        }, [], this);
     }
 }
