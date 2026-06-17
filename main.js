@@ -100,7 +100,7 @@ function create() {
 
     // groups
     stars = this.physics.add.group();
-    bombs = this.physics.add.group();
+    //bombs = this.physics.add.group();
 
     spawnStar(this);
     
@@ -120,13 +120,13 @@ function create() {
 
     // collision
     this.physics.add.collider(player, platforms);
-    this.physics.add.collider(bombs, platforms);
+    //this.physics.add.collider(bombs, platforms);
 
     // star collider
     this.physics.add.collider(stars, platforms);
 
     this.physics.add.overlap(player, stars, collectStar, null, this);
-    this.physics.add.overlap(player, bombs, hitBomb, null, this);
+    //this.physics.add.overlap(player, bombs, hitBomb, null, this);
 }
 
 function update() {
@@ -195,7 +195,7 @@ function collectStar(player, star) {
         //bomb.setVelocity(Phaser.Math.Between(-200, 200), 20);
         //bomb.setBounce(1);
         //bomb.setCollideWorldBounds(true);
-    }
+    //}
 }
 
 // lose condition
