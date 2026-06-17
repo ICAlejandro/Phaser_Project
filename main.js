@@ -29,11 +29,17 @@ let score = 0;
 let scoreText;
 let gameOver = false;
 
+// Life system variables
+let lives = 3;
+let heartsGroup;
+
 let colorIndex = 0;
 const colors = [0xff0000, 0xff7f00, 0xffff00, 0x00ff00, 0x0000ff, 0x4b0082, 0x8f00ff];
 
 function preload() {
     this.load.image('background', 'assets/background.png');
+    this.load.image('bomb', 'assets/bomb.png');
+    this.load.image('gameOverScreen', 'assets/game_over_screen.png');
 
     this.load.spritesheet('player', 'assets/player_spritesheet.png', {
         frameWidth: 64,
@@ -45,7 +51,10 @@ function preload() {
         frameHeight: 64
     });
 
-    this.load.image('bomb', 'assets/bomb.png');
+    this.load.spritesheet('heart', 'assets/heart_spritesheet.png', {
+        frameWidth: 64,
+        frameHeight: 64
+    });
 }
 
 function create() {
@@ -98,11 +107,21 @@ function create() {
         repeat: -1
     });
 
+    // Heart cycle animation loop
+    this.anims.create({
+        key: 'heart_pulse',
+        frames: this.anims.generateFrameNumbers('heart', { start: 0, end: 1 }),
+        frameRate: 4,
+        repeat: -1
+    });
+
     // groups
     stars = this.physics.add.group();
-    //bombs = this.physics.add.group();
+    bombs = this.physics.add.group();
 
+    // Spawn initial items so the game map isn't completely empty
     spawnStar(this);
+    spawnInitialBomb();
     
     // input
     keys = this.input.keyboard.addKeys({
@@ -112,21 +131,26 @@ function create() {
 
     spaceKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
 
-    // UI
-    scoreText = this.add.text(10, 10, 'Stars: 0', {
+    // UI - Hearts are above the star count
+    heartsGroup = this.add.group();
+    for (let i = 0; i < lives; i++) {
+        let heart = heartsGroup.create(35 + (i * 70), 35, 'heart');
+        heart.anims.play('heart_pulse');
+    }
+
+    // UI - Star count placed under the hearts
+    scoreText = this.add.text(10, 75, 'Stars: 0', {
         fontSize: '20px',
         fill: '#1f5c21'
     });
 
     // collision
     this.physics.add.collider(player, platforms);
-    //this.physics.add.collider(bombs, platforms);
-
-    // star collider
+    this.physics.add.collider(bombs, platforms);
     this.physics.add.collider(stars, platforms);
 
     this.physics.add.overlap(player, stars, collectStar, null, this);
-    //this.physics.add.overlap(player, bombs, hitBomb, null, this);
+    this.physics.add.overlap(player, bombs, hitBomb, null, this);
 }
 
 function update() {
@@ -173,6 +197,14 @@ function spawnStar(scene) {
     star.setCollideWorldBounds(true);
 }
 
+// Helper to guarantee at least one bomb is present when the game starts
+function spawnInitialBomb() {
+    let bomb = bombs.create(Phaser.Math.Between(50, 750), 50, 'bomb');
+    bomb.setVelocity(Phaser.Math.Between(-200, 200), 20);
+    bomb.setBounce(1);
+    bomb.setCollideWorldBounds(true);
+}
+
 // collect star
 function collectStar(player, star) {
     star.disableBody(true, true);
@@ -182,31 +214,35 @@ function collectStar(player, star) {
 
     spawnStar(this);
 
-    //player.setTint(colors[colorIndex]);
-    //colorIndex = (colorIndex + 1) % colors.length;
-
     if (score % 5 === 0) {
         player.setScale(player.scale + 0.1);
     }
 
-    //if (Phaser.Math.Between(0, 7) === 0) {//bomb spawn rate
-        //let bomb = bombs.create(Phaser.Math.Between(50, 750), 50, 'bomb');
-
-        //bomb.setVelocity(Phaser.Math.Between(-200, 200), 20);
-        //bomb.setBounce(1);
-        //bomb.setCollideWorldBounds(true);
-    //}
+    // bomb spawn rate here
+    if (Phaser.Math.Between(0, 3) === 0) {
+        let bomb = bombs.create(Phaser.Math.Between(50, 750), 50, 'bomb');
+        bomb.setVelocity(Phaser.Math.Between(-200, 200), 20);
+        bomb.setBounce(1);
+        bomb.setCollideWorldBounds(true);
+    }
 }
 
-// lose condition
+// lose condition / damage handling
 function hitBomb(player, bomb) {
-    this.physics.pause();
-    player.setVisible(false);
+    bomb.destroy();
+    lives--;
 
-    gameOver = true;
+    let currentHearts = heartsGroup.getChildren();
+    if (currentHearts.length > 0) {
+        currentHearts[currentHearts.length - 1].destroy();
+    }
 
-    this.add.text(300, 250, 'GAME OVER', {
-        fontSize: '40px',
-        fill: '#ff0000'
-    });
+    if (lives <= 0) {
+        this.physics.pause();
+        player.setVisible(false);
+
+        gameOver = true;
+
+        this.add.image(400, 300, 'gameOverScreen');
+    }
 }
