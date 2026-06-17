@@ -182,8 +182,8 @@ function collectStar(player, star) {
 
     spawnStar(this);
 
-    player.setTint(colors[colorIndex]);
-    colorIndex = (colorIndex + 1) % colors.length;
+    //player.setTint(colors[colorIndex]);
+    //colorIndex = (colorIndex + 1) % colors.length;
 
     if (score % 5 === 0) {
         player.setScale(player.scale + 0.1);
