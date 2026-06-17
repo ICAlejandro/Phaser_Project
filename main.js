@@ -116,7 +116,7 @@ function create() {
     // UI
     scoreText = this.add.text(10, 10, 'Stars: 0', {
         fontSize: '20px',
-        fill: '#ffffff'
+        fill: '#1f5c21'
     });
 
     // collision
