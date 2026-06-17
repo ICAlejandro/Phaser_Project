@@ -101,8 +101,19 @@ function create() {
     // groups
     stars = this.physics.add.group();
     bombs = this.physics.add.group();
-
+    // added spawn star for 2nd platform
     spawnStar(this);
+    spawnStarOnPlatform(this);
+
+    function spawnStarOnPlatform(scene) {
+        let x = Phaser.Math.Between(285, 515);
+        let y = 340;
+
+        let star = stars.create(x, y, 'star');
+        star.anims.play('star_glow');
+        star.setBounce(0.3);
+        star.setColliderWorldBounds(true);
+    }
 
     // input
     keys = this.input.keyboard.addKeys({
