@@ -26,6 +26,9 @@ let spaceKey;
 
 let score = 0;
 let scoreText;
+let timeLeft = 60;
+let timerText;
+let timerEvent;
 let gameOver = false;
 
 // life system variables
@@ -133,6 +136,19 @@ function create() {
         heart.anims.play('heart_pulse');
     }
 
+    // timer
+    timerText = this.add(700, 10, 'Time: 60', {
+        fontSize: '20px',
+        fill: '#ffffff'
+    });
+
+    timerEvent = this.time.addEvent({
+        delay: 1000,
+        callback: updateTimer,
+        callbackScope: this,
+        loop: true
+    });
+
     // star counter
     scoreText = this.add.text(10, 75, 'Stars: 0', {
         fontSize: '20px',
@@ -177,6 +193,22 @@ function update() {
         else {
             player.anims.play('idle', true);
         }
+    }
+}
+
+function updateTimer() {
+    if (gameOver) return;
+    timeLeft--;
+    timerText.setText('Time: ' + timeLeft);
+
+    if (timeLeft <= 10) {
+        timerEvent.remove();
+        gameOver = true;
+        this.physics.pause();
+        this.add.text(300, 250, 'TIME\'S UP!', {
+            fontSize: '40px',
+            fill: '#ff0000'
+        });
     }
 }
 
