@@ -75,6 +75,15 @@ function preload() {
         frameHeight: 64
     });
 
+    this.load.spritesheet('starParticle', 'assets/starParticle.png', {
+        frameWidth: 16,
+        frameHeight: 16
+    });
+    this.load.spritesheet('stompParticle', 'assets/stompParticle.png', {
+        frameWidth: 16,
+        frameHeight: 16
+    });
+
     // --- LOAD SOUND EFFECTS ---
     this.load.audio('sfx_collect', 'assets/sfx_collect.mp3');
     this.load.audio('sfx_hit', 'assets/sfx_hit.mp3');
@@ -161,6 +170,20 @@ function create() {
         frames: this.anims.generateFrameNumbers('enemyChase', { start: 0, end: 1 }),
         frameRate: 6,
         repeat: -1
+    });
+    
+    this.anims.create({
+        key: 'star_particle_anim',
+        frames: this.anims.generateFrameNumbers('starParticle', { start: 0, end: 3 }),
+        frameRate: 12,
+        repeat: 0
+    });
+
+    this.anims.create({
+        key: 'stomp_particle_anim',
+        frames: this.anims.generateFrameNumbers('stompParticle', { start: 0, end: 3 }),
+        frameRate: 12,
+        repeat: 0
     });
 
     // groups
@@ -346,6 +369,8 @@ function spawnPatrolEnemy(scene) {
 
 // collect star
 function collectStar(player, star) {
+    let x = star.x;
+    let y = star.y;
     star.disableBody(true, true);
 
     // Play collect sound with individual volume configuration
@@ -354,6 +379,16 @@ function collectStar(player, star) {
     score++;
     scoreText.setText('Stars: ' + score);
 
+    for (let i = 0; i < 4; i++) {
+        let p = this.add.sprite(
+            x + Phaser.Math.Between(-10, 10),
+            y + Phaser.Math.Between(-10, 10),
+            'starParticle'
+        );
+        p.anims.play('star_particle_anim');
+        p.once('animationcomplete', () => p.destroy());
+    }
+    
     spawnStar(this);
 }
 
@@ -363,10 +398,7 @@ function hitEnemy(player, enemy) {
 
     lives--;
 
-    // Play hit sound with individual volume configuration
     this.sound.play('sfx_hit', { volume: volumeHit });
-
-    // camera shake
     this.cameras.main.shake(150, 0.02);
 
     let currentHearts = heartsGroup.getChildren();
@@ -384,23 +416,20 @@ function hitEnemy(player, enemy) {
         player.anims.stop();
         player.setTexture('playerHurt');
 
-        // Quick, responsive knock back mechanics added back here
         let knockbackDir = player.x < enemy.x ? -150 : 150;
         player.setVelocityX(knockbackDir);
-        player.setVelocityY(-150); 
+        player.setVelocityY(-150);
 
-        // This tween causes the player to flicker for exactly 1000ms (10 repeats * 100ms duration)
         this.tweens.add({
             targets: player,
             alpha: 0.2,
             duration: 50,
             yoyo: true,
-            repeat: 9, 
+            repeat: 9,
             onComplete: () => {
-                // When the flickering is 100% complete, revert everything cleanly
                 if (!gameOver) {
                     isHurt = false;
-                    player.alpha = 1; // Explicitly forces opacity back to normal solid values
+                    player.alpha = 1;
                     player.setTexture('player');
                     player.anims.play('idle', true);
                 }
@@ -421,8 +450,25 @@ function hitChaseEnemy(player, enemy) {
                    player.body.bottom <= enemy.body.top + 20;
 
     if (stomping) {
+        let ex = enemy.x;
+        let ey = enemy.y;
         enemy.disableBody(true, true);
         player.setVelocityY(-350);
+
+        for (let i = 0; i < 4; i++) {
+            let p = this.add.sprite(
+                ex + Phaser.Math.Between(-15, 15),
+                ey + Phaser.Math.Between(-10, 10),
+                'stompParticle'
+            );
+            p.anims.play('stomp_particle_anim');
+            p.once('animationcomplete', () => p.destroy());
+        }
+
+        // Respawn exactly 1 new chase enemy after a short delay
+        this.time.delayedCall(1000, () => {
+            spawnChaseEnemy(this);
+        });
     } else {
         hitEnemy.call(this, player, enemy);
     }
