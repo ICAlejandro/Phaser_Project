@@ -140,13 +140,13 @@ function create() {
     // timer
     timerText = this.add.text(700, 10, 'Time: 60', {
         fontSize: '20px',
-        fill: '#ffffff'
+        fill: '#0e0846'
     });
 
     // star counter
     scoreText = this.add.text(10, 75, 'Stars: 0', {
         fontSize: '20px',
-        fill: '#1f5c21'
+        fill: '#0e0846'
     });
 
     // collision
