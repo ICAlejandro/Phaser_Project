@@ -5,7 +5,7 @@ const config = {
     physics: {
         default: 'arcade',
         arcade: {
-            gravity: { y: 500 },
+            gravity: { y: 400 },
             debug: false
         }
     },
@@ -71,11 +71,11 @@ function create() {
     // platforms
     platforms = this.physics.add.staticGroup();
 
-    let ground = this.add.rectangle(400, 620, 800, 80, 0x00aa00);
+    let ground = this.add.rectangle(400, 620, 800, 80, 0x191970);
     this.physics.add.existing(ground, true);
     platforms.add(ground);
 
-    let middlePlatform = this.add.rectangle(400, 380, 250, 20, 0x00aa00);
+    let middlePlatform = this.add.rectangle(400, 380, 250, 20, 0x191970);
     this.physics.add.existing(middlePlatform, true);
     platforms.add(middlePlatform);
 
@@ -83,7 +83,7 @@ function create() {
     player = this.physics.add.sprite(400, 450, 'player', 0);
     player.setCollideWorldBounds(true);
 
-    player.setScale(1.3);
+    player.setScale(1.2);
 
     // animations
     this.anims.create({
@@ -206,7 +206,7 @@ function update() {
         }
 
         if (spaceKey.isDown && player.body.touching.down) {
-            player.setVelocityY(-500);
+            player.setVelocityY(-450);
         }
 
         // process movement state animations cleanly
