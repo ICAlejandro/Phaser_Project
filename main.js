@@ -20,7 +20,8 @@ const game = new Phaser.Game(config);
 
 let player;
 let stars;
-let enemies; // Group variable for the patrol enemies
+let enemies;
+let chaseEnemies;
 let platforms;
 let keys;
 let spaceKey;
@@ -65,6 +66,11 @@ function preload() {
 
     // Loaded patrol enemy spritesheet
     this.load.spritesheet('enemyPatrol', 'assets/enemypatrol_spritesheet.png', {
+        frameWidth: 64,
+        frameHeight: 64
+    });
+
+    this.load.spritesheet('enemyChase', 'assets/enemychase_spritesheet.png', {
         frameWidth: 64,
         frameHeight: 64
     });
@@ -143,13 +149,29 @@ function create() {
         repeat: -1
     });
 
+    this.anims.create({
+        key: 'enemy_chase_idle',
+        frames: this.anims.generateFrameNumbers('enemyChase', { start: 0, end: 0 }),
+        frameRate: 1,
+        repeat: -1
+    });
+
+    this.anims.create({
+        key: 'enemy_chase_run',
+        frames: this.anims.generateFrameNumbers('enemyChase', { start: 0, end: 1 }),
+        frameRate: 6,
+        repeat: -1
+    });
+
     // groups
     stars = this.physics.add.group();
     enemies = this.physics.add.group();
+    chaseEnemies = this.physics.add.group();
 
     // Spawn initial items so the game map isn't completely empty
     spawnStar(this);
     spawnPatrolEnemy(this);
+    spawnChaseEnemy(this);
     
     // input
     keys = this.input.keyboard.addKeys({
@@ -182,9 +204,11 @@ function create() {
     this.physics.add.collider(player, platforms);
     this.physics.add.collider(stars, platforms);
     this.physics.add.collider(enemies, platforms);
+    this.physics.add.collider(chaseEnemies, platforms);
 
     this.physics.add.overlap(player, stars, collectStar, null, this);
     this.physics.add.overlap(player, enemies, hitEnemy, null, this);
+    this.physics.add.overlap(player, chaseEnemies, hitChaseEnemy, null, this);
 }
 
 function update() {
@@ -251,6 +275,22 @@ function update() {
             enemy.setFlipX(false);
         } else if (enemy.body.velocity.x < 0) {
             enemy.setFlipX(true);
+        }
+    });
+
+    chaseEnemies.getChildren().forEach((enemy) => {
+        if (!enemy.active) return;
+
+        let dist = Phaser.Math.Distance.Between(player.x, player.y, enemy.x, enemy.y);
+
+        if (dist < 200) {
+            let dir = player.x < enemy.x ? -1 : 1;
+            enemy.setVelocityX(dir * 120);
+            enemy.setFlipX(dir < 0);
+            enemy.anims.play('enemy_chase_run', true);
+        } else {
+            enemy.setVelocityX(0);
+            enemy.anims.play('enemy_chase_idle', true);
         }
     });
 }
@@ -368,5 +408,24 @@ function hitEnemy(player, enemy) {
                 }
             }
         });
+    }
+}
+function spawnChaseEnemy(scene) {
+    let enemy = chaseEnemies.create(650, 500, 'enemyChase');
+    enemy.setCollideWorldBounds(true);
+    enemy.anims.play('enemy_chase_idle');
+}
+
+function hitChaseEnemy(player, enemy) {
+    if (isHurt) return;
+
+    let stomping = player.body.velocity.y > 0 &&
+                   player.body.bottom <= enemy.body.top + 20;
+
+    if (stomping) {
+        enemy.disableBody(true, true);
+        player.setVelocityY(-350);
+    } else {
+        hitEnemy.call(this, player, enemy);
     }
 }
