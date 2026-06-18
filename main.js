@@ -38,6 +38,11 @@ let lives = 3;
 let heartsGroup;
 let isHurt = false; // Flag to track if player is in the hurt state
 
+// --- INDIVIDUAL VOLUME CONTROLS ---
+let volumeCollect = 0.5; 
+let volumeHit = 0.9;
+let volumeJump = 0.6;
+
 function preload() {
     this.load.image('background', 'assets/background.png');
     this.load.image('gameOverScreen', 'assets/game_over_screen.png');
@@ -63,6 +68,11 @@ function preload() {
         frameWidth: 64,
         frameHeight: 64
     });
+
+    // --- LOAD SOUND EFFECTS ---
+    this.load.audio('sfx_collect', 'assets/sfx_collect.mp3');
+    this.load.audio('sfx_hit', 'assets/sfx_hit.mp3');
+    this.load.audio('sfx_jump', 'assets/sfx_jump.mp3');
 }
 
 function create() {
@@ -214,6 +224,12 @@ function update() {
 
     if (spaceKey.isDown && player.body.touching.down) {
         player.setVelocityY(-450);
+        
+        // Play jump sound with its unique speed rate and individual volume
+        this.sound.play('sfx_jump', { 
+            rate: 0.7,
+            volume: volumeJump
+        });
     }
 
     // Process matching asset visual styling states cleanly
@@ -294,6 +310,9 @@ function spawnPatrolEnemy(scene) {
 function collectStar(player, star) {
     star.disableBody(true, true);
 
+    // Play collect sound with individual volume configuration
+    this.sound.play('sfx_collect', { volume: volumeCollect });
+
     score++;
     scoreText.setText('Stars: ' + score);
 
@@ -305,6 +324,9 @@ function hitEnemy(player, enemy) {
     if (isHurt) return;
 
     lives--;
+
+    // Play hit sound with individual volume configuration
+    this.sound.play('sfx_hit', { volume: volumeHit });
 
     // camera shake
     this.cameras.main.shake(150, 0.02);
