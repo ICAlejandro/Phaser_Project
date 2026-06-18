@@ -192,28 +192,36 @@ function update() {
 
     let speed = 200;
 
-    // Only allow player movement control if they are not frozen in the hurt state
-    if (!isHurt) {
+    // Movement controls (Always processing now, even if hurt, giving user full control override)
+    let currentVelocityY = player.body.velocity.y;
+    let isMovingHorizontally = false;
+
+    if (keys.A.isDown) {
+        player.setVelocityX(-speed);
+        player.setFlipX(true);
+        isMovingHorizontally = true;
+    }
+    else if (keys.D.isDown) {
+        player.setVelocityX(speed);
+        player.setFlipX(false);
+        isMovingHorizontally = true;
+    }
+    else {
+        // Only arrest horizontal movement if user isn't holding left/right keys 
+        // This ensures sudden knockbacks don't glide indefinitely if player lets go of inputs
         player.setVelocityX(0);
+    }
 
-        if (keys.A.isDown) {
-            player.setVelocityX(-speed);
-            player.setFlipX(true);
-        }
-        else if (keys.D.isDown) {
-            player.setVelocityX(speed);
-            player.setFlipX(false);
-        }
+    if (spaceKey.isDown && player.body.touching.down) {
+        player.setVelocityY(-450);
+    }
 
-        if (spaceKey.isDown && player.body.touching.down) {
-            player.setVelocityY(-450);
-        }
-
-        // process movement state animations cleanly
+    // Process matching asset visual styling states cleanly
+    if (!isHurt) {
         if (!player.body.touching.down) {
             player.anims.play('jump', true);
         }
-        else if (player.body.velocity.x !== 0) {
+        else if (isMovingHorizontally) {
             player.anims.play('run', true);
         }
         else {
@@ -316,10 +324,10 @@ function hitEnemy(player, enemy) {
         player.anims.stop();
         player.setTexture('playerHurt');
 
-        // Knock back velocity
-        let knockbackDir = player.x < enemy.x ? -200 : 200;
+        // Quick, responsive knock back mechanics added back here
+        let knockbackDir = player.x < enemy.x ? -150 : 150;
         player.setVelocityX(knockbackDir);
-        player.setVelocityY(-250);
+        player.setVelocityY(-150); 
 
         // This tween causes the player to flicker for exactly 1000ms (10 repeats * 100ms duration)
         this.tweens.add({
