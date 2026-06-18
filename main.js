@@ -227,13 +227,13 @@ function create() {
     }
 
     // timer
-    timerText = this.add.text(700, 10, 'Time: 60', {
+    timerText = this.add.text(700, 10, 'Time: ' + timeLeft, {
         fontSize: '20px',
         fill: '#0e0846'
     });
 
     // star counter
-    scoreText = this.add.text(10, 75, 'Stars: 0', {
+    scoreText = this.add.text(10, 75, 'Stars: ' + score, {
         fontSize: '20px',
         fill: '#0e0846'
     });
@@ -365,15 +365,17 @@ function updateTimer() {
         
         if (bgm) bgm.stop(); // Stops background music when timer runs out
 
-        this.add.text(300, 250, 'TIME\'S UP!', {
+        this.add.text(300, 200, 'TIME\'S UP!', {
             fontSize: '40px',
             fill: '#ff0000'
         });
 
-        this.add.text(280, 320, 'Stars Collected: ' + score, {
+        this.add.text(280, 270, 'Stars Collected: ' + score, {
             fontSize: '30px',
             fill: '#ffffff'
         });
+
+        createRetryButton(this);
     }
 }
 
@@ -443,6 +445,7 @@ function hitEnemy(player, enemy) {
         if (bgm) bgm.stop();
         
         this.add.image(400, 300, 'gameOverScreen');
+        createRetryButton(this);
     } else {
         isHurt = true;
         player.anims.stop();
@@ -585,4 +588,66 @@ function stompPatrolEnemy(player, enemy) {
     } else {
         if (!isStomping) hitEnemy.call(this, player, enemy);
     }
+}
+
+// Helper function to create an interactive retry button on screen
+function createRetryButton(scene) {
+    const btnWidth = 240;
+    const btnHeight = 60;
+    const btnX = 400;
+    const btnY = 400;
+    const cornerRadius = 15; 
+
+    let bgGraphics = scene.add.graphics();
+    bgGraphics.fillStyle(0x12d0ff, 0.7); // opacity
+    bgGraphics.fillRoundedRect(btnX - btnWidth / 2, btnY - btnHeight / 2, btnWidth, btnHeight, cornerRadius);
+
+    let retryButtonText = scene.add.text(btnX, btnY, 'PLAY AGAIN', {
+        fontSize: '32px',
+        fill: '#0d0f2d',
+        fontStyle: 'bold'
+    });
+    retryButtonText.setOrigin(0.5);
+    retryButtonText.setAlpha(0.4); // opacity
+
+    let buttonZone = scene.add.zone(btnX, btnY, btnWidth, btnHeight);
+    buttonZone.setInteractive({ useHandCursor: true });
+
+    buttonZone.on('pointerover', () => {
+        retryButtonText.setStyle({ fill: '#151f6d' });
+        retryButtonText.setAlpha(1); // Make it solid on hover
+        
+        bgGraphics.clear();
+        bgGraphics.fillStyle(0x12d0ff, 1); // Make background solid on hover
+        bgGraphics.fillRoundedRect(btnX - btnWidth / 2, btnY - btnHeight / 2, btnWidth, btnHeight, cornerRadius);
+    });
+
+    buttonZone.on('pointerout', () => {
+        retryButtonText.setStyle({ fill: '#100d29' });
+        retryButtonText.setAlpha(0.7); // Return back to low opacity frame setting
+        
+        bgGraphics.clear();
+        bgGraphics.fillStyle(0x12d0ff, 0.7); // Return back to low opacity background setting
+        bgGraphics.fillRoundedRect(btnX - btnWidth / 2, btnY - btnHeight / 2, btnWidth, btnHeight, cornerRadius);
+    });
+
+    // Reset properties and trigger scene restart on press
+    buttonZone.on('pointerdown', () => {
+        if (timerEvent) timerEvent.remove();
+        if (bgm) bgm.stop();
+        resetGameState();
+        scene.scene.restart();
+    });
+}
+
+// reset feature  
+function resetGameState() {
+    score = 0;
+    timeLeft = 60;
+    timerStarted = false;
+    gameOver = false;
+    lives = 3;
+    isHurt = false;
+    isStomping = false;
+    jumpCount = 0;
 }
