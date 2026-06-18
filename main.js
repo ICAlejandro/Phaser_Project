@@ -43,12 +43,12 @@ let isStomping = false;
 // --- INDIVIDUAL VOLUME CONTROLS ---
 let volumeCollect = 0.5; 
 let volumeHit = 0.9;
-let volumeJump = 0.6;
+let volumeJump = 0.5;
 
 function preload() {
     this.load.image('background', 'assets/background.png');
     this.load.image('gameOverScreen', 'assets/game_over_screen.png');
-    this.load.image('playerHurt', 'assets/player_hurt.png'); // Loaded the hurt image asset
+    this.load.image('playerHurt', 'assets/player_hurt.png');
 
     this.load.spritesheet('player', 'assets/player_spritesheet.png', {
         frameWidth: 64,
@@ -80,12 +80,12 @@ function preload() {
         frameWidth: 64,
         frameHeight: 64
     });
-    this.load.spritesheet('stompParticle', 'assets/stompParticle_spritesheet.png', {
+    this.load.spritesheet('stompParticle', 'assets/death_spritesheet.png', {
         frameWidth: 64,
         frameHeight: 64
     });
 
-    // --- LOAD SOUND EFFECTS ---
+    // sfx
     this.load.audio('sfx_collect', 'assets/sfx_collect.mp3');
     this.load.audio('sfx_hit', 'assets/sfx_hit.mp3');
     this.load.audio('sfx_jump', 'assets/sfx_jump.mp3');
@@ -151,7 +151,7 @@ function create() {
         repeat: -1
     });
 
-    // Enemy walking animation loop (2-frame format like the star)
+    // Enemy walking animation loop
     this.anims.create({
         key: 'enemy_walk',
         frames: this.anims.generateFrameNumbers('enemyPatrol', { start: 0, end: 1 }),
@@ -228,10 +228,8 @@ function create() {
     this.physics.add.collider(player, platforms);
     this.physics.add.collider(stars, platforms);
     this.physics.add.collider(enemies, platforms);
-    this.physics.add.collider(chaseEnemies, platforms);
 
     this.physics.add.overlap(player, stars, collectStar, null, this);
-    //this.physics.add.overlap(player, enemies, hitEnemy, null, this);
     this.physics.add.overlap(player, enemies, stompPatrolEnemy, null, this);
     this.physics.add.overlap(player, chaseEnemies, hitChaseEnemy, null, this);
 }
@@ -251,7 +249,7 @@ function update() {
 
     let speed = 200;
 
-    // Movement controls (Always processing now, even if hurt, giving user full control override)
+    // movement  
     let currentVelocityY = player.body.velocity.y;
     let isMovingHorizontally = false;
 
@@ -306,14 +304,16 @@ function update() {
 
         let dist = Phaser.Math.Distance.Between(player.x, player.y, enemy.x, enemy.y);
 
-        if (dist < 200) {
-            let dir = player.x < enemy.x ? -1 : 1;
-            enemy.setVelocityX(dir * 120);
-            enemy.setFlipX(dir > 0);
+        // Always keep the movement/running loop playing, even if the player is out of range
+        if (enemy.anims.currentAnim?.key !== 'enemy_chase_run') {
             enemy.anims.play('enemy_chase_run', true);
+        }
+
+        if (dist < 200) {
+            this.physics.moveToObject(enemy, player, 110);
+            enemy.setFlipX(player.x > enemy.x);
         } else {
-            enemy.setVelocityX(0);
-            enemy.anims.play('enemy_chase_idle', true);
+            enemy.setVelocity(0);
         }
     });
 }
@@ -439,15 +439,19 @@ function hitEnemy(player, enemy) {
         });
     }
 }
+
 function spawnChaseEnemy(scene) {
     let x;
     do {
         x = Phaser.Math.Between(50, 750);
     } while (Math.abs(x - player.x) < 200);
     
-    let enemy = chaseEnemies.create(x, 500, 'enemyChase');
+    let y = Phaser.Math.Between(100, 300);
+    let enemy = chaseEnemies.create(x, y, 'enemyChase');
     enemy.setCollideWorldBounds(true);
-    enemy.anims.play('enemy_chase_idle');
+    
+    enemy.body.setAllowGravity(false);
+    enemy.anims.play('enemy_chase_run'); // Start immediately in the running/looping frame state
 }
 
 function hitChaseEnemy(player, enemy) {
@@ -483,6 +487,7 @@ function hitChaseEnemy(player, enemy) {
         if (!isStomping) hitEnemy.call(this, player, enemy);
     }
 }
+
 function stompPatrolEnemy(player, enemy) {
     let stomping = player.body.velocity.y > 0 &&
                    player.body.bottom <= enemy.body.center.y;
