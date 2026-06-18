@@ -230,7 +230,8 @@ function create() {
     this.physics.add.collider(chaseEnemies, platforms);
 
     this.physics.add.overlap(player, stars, collectStar, null, this);
-    this.physics.add.overlap(player, enemies, hitEnemy, null, this);
+    //this.physics.add.overlap(player, enemies, hitEnemy, null, this);
+    this.physics.add.overlap(player, enemies, stompPatrolEnemy, null, this);
     this.physics.add.overlap(player, chaseEnemies, hitChaseEnemy, null, this);
 }
 
@@ -468,6 +469,35 @@ function hitChaseEnemy(player, enemy) {
         // Respawn exactly 1 new chase enemy after a short delay
         this.time.delayedCall(1000, () => {
             spawnChaseEnemy(this);
+        });
+    } else {
+        hitEnemy.call(this, player, enemy);
+    }
+}
+function stompPatrolEnemy(player, enemy) {
+    if (isHurt) return;
+
+    let stomping = player.body.velocity.y > 0 &&
+                   player.body.bottom <= enemy.body.center.y;
+
+    if (stomping) {
+        let ex = enemy.x;
+        let ey = enemy.y;
+        enemy.disableBody(true, true);
+        player.setVelocityY(-350);
+
+        for (let i = 0; i < 4; i++) {
+            let p = this.add.sprite(
+                ex + Phaser.Math.Between(-15, 15),
+                ey + Phaser.Math.Between(-10, 10),
+                'stompParticle'
+            );
+            p.anims.play('stomp_particle_anim');
+            p.once('animationcomplete', () => p.destroy());
+        }
+
+        this.time.delayedCall(1000, () => {
+            spawnPatrolEnemy(this);
         });
     } else {
         hitEnemy.call(this, player, enemy);
