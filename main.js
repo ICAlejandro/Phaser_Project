@@ -20,7 +20,6 @@ const game = new Phaser.Game(config);
 
 let player;
 let stars;
-let bombs;
 let platforms;
 let keys;
 let spaceKey;
@@ -34,12 +33,8 @@ let lives = 3;
 let heartsGroup;
 let isHurt = false; // Flag to track if player is in the hurt state
 
-let colorIndex = 0;
-const colors = [0xff0000, 0xff7f00, 0xffff00, 0x00ff00, 0x0000ff, 0x4b0082, 0x8f00ff];
-
 function preload() {
     this.load.image('background', 'assets/background.png');
-    this.load.image('bomb', 'assets/bomb.png');
     this.load.image('gameOverScreen', 'assets/game_over_screen.png');
     this.load.image('playerHurt', 'assets/player_hurt.png'); // Loaded the hurt image asset
 
@@ -119,11 +114,9 @@ function create() {
 
     // groups
     stars = this.physics.add.group();
-    bombs = this.physics.add.group();
 
     // Spawn initial items so the game map isn't completely empty
     spawnStar(this);
-    spawnInitialBomb();
     
     // input
     keys = this.input.keyboard.addKeys({
@@ -148,11 +141,9 @@ function create() {
 
     // collision
     this.physics.add.collider(player, platforms);
-    this.physics.add.collider(bombs, platforms);
     this.physics.add.collider(stars, platforms);
 
     this.physics.add.overlap(player, stars, collectStar, null, this);
-    this.physics.add.overlap(player, bombs, hitBomb, null, this);
 }
 
 function update() {
@@ -202,14 +193,6 @@ function spawnStar(scene) {
     star.setCollideWorldBounds(true);
 }
 
-// one bomb start guarantee 
-function spawnInitialBomb() {
-    let bomb = bombs.create(Phaser.Math.Between(50, 750), 50, 'bomb');
-    bomb.setVelocity(Phaser.Math.Between(-200, 200), 20);
-    bomb.setBounce(1);
-    bomb.setCollideWorldBounds(true);
-}
-
 // collect star
 function collectStar(player, star) {
     star.disableBody(true, true);
@@ -221,45 +204,5 @@ function collectStar(player, star) {
 
     if (score % 5 === 0) {
         player.setScale(player.scale + 0.1);
-    }
-
-    // bomb spawn rate here
-    if (Phaser.Math.Between(0, 3) === 0) {
-        let bomb = bombs.create(Phaser.Math.Between(50, 750), 50, 'bomb');
-        bomb.setVelocity(Phaser.Math.Between(-200, 200), 20);
-        bomb.setBounce(1);
-        bomb.setCollideWorldBounds(true);
-    }
-}
-
-// lose condition / damage handling
-function hitBomb(player, bomb) {
-    bomb.destroy();
-    lives--;
-
-    let currentHearts = heartsGroup.getChildren();
-    if (currentHearts.length > 0) {
-        currentHearts[currentHearts.length - 1].destroy();
-    }
-
-    if (lives <= 0) {
-        this.physics.pause();
-        player.setVisible(false);
-        gameOver = true;
-        this.add.image(400, 300, 'gameOverScreen');
-    } else {
-        // get hurt state animation
-        isHurt = true;
-        player.anims.stop();
-        player.setTexture('playerHurt'); 
-
-        // get hit animation 
-        this.time.delayedCall(300, () => {
-            if (!gameOver) {
-                isHurt = false;
-                player.setTexture('player'); 
-                player.anims.play('idle', true); 
-            }
-        }, [], this);
     }
 }
