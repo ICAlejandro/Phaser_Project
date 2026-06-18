@@ -29,6 +29,7 @@ let scoreText;
 let timeLeft = 60;
 let timerText;
 let timerEvent;
+let timeStarted = false;
 let gameOver = false;
 
 // life system variables
@@ -142,13 +143,6 @@ function create() {
         fill: '#ffffff'
     });
 
-    timerEvent = this.time.addEvent({
-        delay: 1000,
-        callback: updateTimer,
-        callbackScope: this,
-        loop: true
-    });
-
     // star counter
     scoreText = this.add.text(10, 75, 'Stars: 0', {
         fontSize: '20px',
@@ -164,6 +158,16 @@ function create() {
 
 function update() {
     if (gameOver) return;
+    if (!timerStarted && (keys.A.isDown || keys.D.isDown || spaceKey.isDown)) {
+        timerStarted = true;
+
+        timerEvent = this.time.addEvent({
+            delay: 1000,
+            callback: updateTimer,
+            callbackScope: this,
+            loop: true
+        });
+    }
 
     let speed = 200;
 
