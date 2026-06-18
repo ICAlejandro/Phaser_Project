@@ -290,10 +290,6 @@ function collectStar(player, star) {
     scoreText.setText('Stars: ' + score);
 
     spawnStar(this);
-
-    // if (score % 5 === 0) {
-    //     player.setScale(player.scale + 0.1);
-    // }
 }
 
 // player damage handling when colliding with patrol enemy
@@ -301,6 +297,9 @@ function hitEnemy(player, enemy) {
     if (isHurt) return;
 
     lives--;
+
+    // camera shake
+    this.cameras.main.shake(150, 0.02);
 
     let currentHearts = heartsGroup.getChildren();
     if (currentHearts.length > 0) {
