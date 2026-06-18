@@ -38,6 +38,7 @@ let gameOver = false;
 let lives = 3;
 let heartsGroup;
 let isHurt = false; // Flag to track if player is in the hurt state
+let isStomping = false;
 
 // --- INDIVIDUAL VOLUME CONTROLS ---
 let volumeCollect = 0.5; 
@@ -439,18 +440,24 @@ function hitEnemy(player, enemy) {
     }
 }
 function spawnChaseEnemy(scene) {
-    let enemy = chaseEnemies.create(650, 500, 'enemyChase');
+    let x;
+    do {
+        x = Phaser.Math.Between(50, 750);
+    } while (Math.abs(x - player.x) < 200);
+    
+    let enemy = chaseEnemies.create(x, 500, 'enemyChase');
     enemy.setCollideWorldBounds(true);
     enemy.anims.play('enemy_chase_idle');
 }
 
 function hitChaseEnemy(player, enemy) {
-    if (isHurt) return;
-
     let stomping = player.body.velocity.y > 0 &&
                    player.body.bottom <= enemy.body.top + 20;
 
     if (stomping) {
+        if (isStomping) return;
+        isStomping = true;
+        
         let ex = enemy.x;
         let ey = enemy.y;
         enemy.disableBody(true, true);
@@ -462,25 +469,28 @@ function hitChaseEnemy(player, enemy) {
                 ey + Phaser.Math.Between(-10, 10),
                 'stompParticle'
             );
+            p.setScale(1.5);
             p.anims.play('stomp_particle_anim');
             p.once('animationcomplete', () => p.destroy());
         }
 
         // Respawn exactly 1 new chase enemy after a short delay
         this.time.delayedCall(1000, () => {
+            isStomping = false;
             spawnChaseEnemy(this);
         });
     } else {
-        hitEnemy.call(this, player, enemy);
+        if (!isStomping) hitEnemy.call(this, player, enemy);
     }
 }
 function stompPatrolEnemy(player, enemy) {
-    if (isHurt) return;
-
     let stomping = player.body.velocity.y > 0 &&
                    player.body.bottom <= enemy.body.center.y;
 
     if (stomping) {
+        if (isStomping) return;
+        isStomping = true;
+        
         let ex = enemy.x;
         let ey = enemy.y;
         enemy.disableBody(true, true);
@@ -492,14 +502,16 @@ function stompPatrolEnemy(player, enemy) {
                 ey + Phaser.Math.Between(-10, 10),
                 'stompParticle'
             );
+            p.setScale(1.5);
             p.anims.play('stomp_particle_anim');
             p.once('animationcomplete', () => p.destroy());
         }
 
         this.time.delayedCall(1000, () => {
+            isStomping = false;
             spawnPatrolEnemy(this);
         });
     } else {
-        hitEnemy.call(this, player, enemy);
+        if (!isStomping) hitEnemy.call(this, player, enemy);
     }
 }
