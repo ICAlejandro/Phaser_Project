@@ -29,7 +29,7 @@ let scoreText;
 let timeLeft = 60;
 let timerText;
 let timerEvent;
-let timeStarted = false;
+let timerStarted = false;
 let gameOver = false;
 
 // life system variables
