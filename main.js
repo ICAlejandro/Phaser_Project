@@ -6,7 +6,7 @@ const config = {
         default: 'arcade',
         arcade: {
             gravity: { y: 400 },
-            debug: false
+            debug: false //if true, shows hitbox  
         }
     },
     scene: {
@@ -40,10 +40,19 @@ let heartsGroup;
 let isHurt = false; // Flag to track if player is in the hurt state
 let isStomping = false;
 
-// --- INDIVIDUAL VOLUME CONTROLS ---
+// Jump tracking variable
+let jumpCount = 0;
+
+// volume control
 let volumeCollect = 0.5; 
 let volumeHit = 0.9;
 let volumeJump = 0.5;
+let volumeBgm = 0.1; 
+
+let bgm;
+
+let chaseEnemySpeed = 110; 
+let roamEnemySpeed = 40; 
 
 function preload() {
     this.load.image('background', 'assets/background.png');
@@ -85,14 +94,19 @@ function preload() {
         frameHeight: 64
     });
 
-    // sfx
+    // Audio Assets
     this.load.audio('sfx_collect', 'assets/sfx_collect.mp3');
     this.load.audio('sfx_hit', 'assets/sfx_hit.mp3');
-    this.load.audio('sfx_jump', 'assets/sfx_jump.mp3');
+    this.load.audio('sfx_jump', 'assets/sfx_jump.mp3'); //also used for the stomp sfx  
+    this.load.audio('bgm', 'assets/bgm.mp3');
 }
 
 function create() {
     this.add.image(400, 300, 'background');
+
+    // Play and loop background music smoothly
+    bgm = this.sound.add('bgm', { loop: true, volume: volumeBgm });
+    bgm.play();
 
     // platforms
     platforms = this.physics.add.staticGroup();
@@ -267,14 +281,22 @@ function update() {
         player.setVelocityX(0);
     }
 
-    if (spaceKey.isDown && player.body.touching.down) {
-        player.setVelocityY(-450);
-        
-        // Play jump sound with its unique speed rate and individual volume
-        this.sound.play('sfx_jump', { 
-            rate: 0.7,
-            volume: volumeJump
-        });
+    if (player.body.touching.down) {
+        jumpCount = 0;
+    } else if (jumpCount === 0) {
+        jumpCount = 1;
+    }
+
+    if (Phaser.Input.Keyboard.JustDown(spaceKey)) {
+        if (player.body.touching.down || jumpCount < 2) {
+            player.setVelocityY(-400);//jump height
+            jumpCount++;
+            
+            this.sound.play('sfx_jump', { 
+                rate: jumpCount === 2 ? 0.9 : 0.7, // double jump sfx pitch
+                volume: volumeJump
+            });
+        }
     }
 
     // Process matching asset visual styling states cleanly
@@ -290,8 +312,8 @@ function update() {
         }
     }
 
-    // Flip enemy sprite based on its movement direction
     enemies.getChildren().forEach((enemy) => {
+        if (!enemy.active) return;
         if (enemy.body.velocity.x > 0) {
             enemy.setFlipX(false);
         } else if (enemy.body.velocity.x < 0) {
@@ -310,10 +332,19 @@ function update() {
         }
 
         if (dist < 200) {
-            this.physics.moveToObject(enemy, player, 110);
+            this.physics.moveToObject(enemy, player, chaseEnemySpeed);
             enemy.setFlipX(player.x > enemy.x);
         } else {
-            enemy.setVelocity(0);
+            // Pick a slower, random trajectory loop if currently idling or completely stopped
+            if (enemy.body.velocity.x === 0 && enemy.body.velocity.y === 0) {
+                let randomAngle = Phaser.Math.FloatBetween(0, Math.PI * 2);
+                enemy.setVelocity(
+                    Math.cos(randomAngle) * roamEnemySpeed,
+                    Math.sin(randomAngle) * roamEnemySpeed
+                );
+            }
+            // Maintain layout tracking updates during passive paths
+            enemy.setFlipX(enemy.body.velocity.x > 0);
         }
     });
 }
@@ -331,6 +362,8 @@ function updateTimer() {
         timerEvent.remove();
         gameOver = true;
         this.physics.pause();
+        
+        if (bgm) bgm.stop(); // Stops background music when timer runs out
 
         this.add.text(300, 250, 'TIME\'S UP!', {
             fontSize: '40px',
@@ -375,21 +408,15 @@ function collectStar(player, star) {
     let y = star.y;
     star.disableBody(true, true);
 
-    // Play collect sound with individual volume configuration
     this.sound.play('sfx_collect', { volume: volumeCollect });
 
     score++;
     scoreText.setText('Stars: ' + score);
 
-    for (let i = 0; i < 4; i++) {
-        let p = this.add.sprite(
-            x + Phaser.Math.Between(-10, 10),
-            y + Phaser.Math.Between(-10, 10),
-            'starParticle'
-        );
-        p.anims.play('star_particle_anim');
-        p.once('animationcomplete', () => p.destroy());
-    }
+    // Removed loop: Creating a single sprite instance since the spritesheet holds the full sequence
+    let p = this.add.sprite(x, y, 'starParticle');
+    p.anims.play('star_particle_anim');
+    p.once('animationcomplete', () => p.destroy());
     
     spawnStar(this);
 }
@@ -412,6 +439,9 @@ function hitEnemy(player, enemy) {
         this.physics.pause();
         player.setVisible(false);
         gameOver = true;
+        
+        if (bgm) bgm.stop();
+        
         this.add.image(400, 300, 'gameOverScreen');
     } else {
         isHurt = true;
@@ -421,6 +451,7 @@ function hitEnemy(player, enemy) {
         let knockbackDir = player.x < enemy.x ? -150 : 150;
         player.setVelocityX(knockbackDir);
         player.setVelocityY(-150);
+        jumpCount = 1; // Allows a single recovery jump if knocked into mid-air
 
         this.tweens.add({
             targets: player,
@@ -449,9 +480,10 @@ function spawnChaseEnemy(scene) {
     let y = Phaser.Math.Between(100, 300);
     let enemy = chaseEnemies.create(x, y, 'enemyChase');
     enemy.setCollideWorldBounds(true);
+    enemy.setBounce(1, 1); // roaming feature
     
     enemy.body.setAllowGravity(false);
-    enemy.anims.play('enemy_chase_run'); // Start immediately in the running/looping frame state
+    enemy.anims.play('enemy_chase_run'); 
 }
 
 function hitChaseEnemy(player, enemy) {
@@ -464,19 +496,36 @@ function hitChaseEnemy(player, enemy) {
         
         let ex = enemy.x;
         let ey = enemy.y;
-        enemy.disableBody(true, true);
+        
+        enemy.disableBody(true, false);
         player.setVelocityY(-350);
+        jumpCount = 1; // Refresh jump count to allow 1 single mid-air jump after a successful stomp bounce!
 
-        for (let i = 0; i < 4; i++) {
-            let p = this.add.sprite(
-                ex + Phaser.Math.Between(-15, 15),
-                ey + Phaser.Math.Between(-10, 10),
-                'stompParticle'
-            );
-            p.setScale(1.5);
-            p.anims.play('stomp_particle_anim');
-            p.once('animationcomplete', () => p.destroy());
-        }
+        // Play the jump sound pitched down for the stomp impact
+        this.sound.play('sfx_jump', { 
+            rate: 0.5, // Pitched down from the standard jump rate
+            volume: volumeJump
+        });
+
+        this.tweens.add({
+            targets: enemy,
+            scaleY: 0.1,
+            scaleX: 1.6,
+            alpha: 0,
+            y: ey + 20, 
+            duration: 200,
+            ease: 'Quad.easeOut',
+            onComplete: () => {
+                enemy.destroy();
+            }
+        });
+
+        // Removed loop to fix the overlapping asset stacking bug
+        let p = this.add.sprite(ex, ey, 'stompParticle');
+        p.setScale(1.5);
+        p.setAlpha(0.3); 
+        p.anims.play('stomp_particle_anim');
+        p.once('animationcomplete', () => p.destroy());
 
         // Respawn exactly 1 new chase enemy after a short delay
         this.time.delayedCall(1000, () => {
@@ -498,19 +547,36 @@ function stompPatrolEnemy(player, enemy) {
         
         let ex = enemy.x;
         let ey = enemy.y;
-        enemy.disableBody(true, true);
+        
+        enemy.disableBody(true, false);
         player.setVelocityY(-350);
+        jumpCount = 1; // Refresh jump count to allow 1 single mid-air jump after a successful stomp bounce!
 
-        for (let i = 0; i < 4; i++) {
-            let p = this.add.sprite(
-                ex + Phaser.Math.Between(-15, 15),
-                ey + Phaser.Math.Between(-10, 10),
-                'stompParticle'
-            );
-            p.setScale(1.5);
-            p.anims.play('stomp_particle_anim');
-            p.once('animationcomplete', () => p.destroy());
-        }
+        // Play the jump sound pitched down for the stomp impact
+        this.sound.play('sfx_jump', { 
+            rate: 0.5, // Pitched down from the standard jump rate
+            volume: volumeJump
+        });
+
+        this.tweens.add({
+            targets: enemy,
+            scaleY: 0.1,
+            scaleX: 1.6,
+            alpha: 0,
+            y: ey + 20, 
+            duration: 200,
+            ease: 'Quad.easeOut',
+            onComplete: () => {
+                enemy.destroy();
+            }
+        });
+
+        // Removed loop to fix the overlapping asset stacking bug
+        let p = this.add.sprite(ex, ey, 'stompParticle');
+        p.setScale(1.5);
+        p.setAlpha(0.5); 
+        p.anims.play('stomp_particle_anim');
+        p.once('animationcomplete', () => p.destroy());
 
         this.time.delayedCall(1000, () => {
             isStomping = false;
