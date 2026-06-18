@@ -20,6 +20,7 @@ const game = new Phaser.Game(config);
 
 let player;
 let stars;
+let enemies; // Group variable for the patrol enemies
 let platforms;
 let keys;
 let spaceKey;
@@ -56,6 +57,12 @@ function preload() {
         frameWidth: 64,
         frameHeight: 64
     });
+
+    // Loaded patrol enemy spritesheet
+    this.load.spritesheet('enemyPatrol', 'assets/enemypatrol_spritesheet.png', {
+        frameWidth: 64,
+        frameHeight: 64
+    });
 }
 
 function create() {
@@ -75,6 +82,8 @@ function create() {
     // player
     player = this.physics.add.sprite(400, 450, 'player', 0);
     player.setCollideWorldBounds(true);
+
+    player.setScale(1.3);
 
     // animations
     this.anims.create({
@@ -116,11 +125,21 @@ function create() {
         repeat: -1
     });
 
+    // Enemy walking animation loop (2-frame format like the star)
+    this.anims.create({
+        key: 'enemy_walk',
+        frames: this.anims.generateFrameNumbers('enemyPatrol', { start: 0, end: 1 }),
+        frameRate: 6,
+        repeat: -1
+    });
+
     // groups
     stars = this.physics.add.group();
+    enemies = this.physics.add.group();
 
     // Spawn initial items so the game map isn't completely empty
     spawnStar(this);
+    spawnPatrolEnemy(this);
     
     // input
     keys = this.input.keyboard.addKeys({
@@ -152,8 +171,10 @@ function create() {
     // collision
     this.physics.add.collider(player, platforms);
     this.physics.add.collider(stars, platforms);
+    this.physics.add.collider(enemies, platforms);
 
     this.physics.add.overlap(player, stars, collectStar, null, this);
+    this.physics.add.overlap(player, enemies, hitEnemy, null, this);
 }
 
 function update() {
@@ -171,23 +192,24 @@ function update() {
 
     let speed = 200;
 
-    player.setVelocityX(0);
-
-    if (keys.A.isDown) {
-        player.setVelocityX(-speed);
-        player.setFlipX(true);
-    }
-    else if (keys.D.isDown) {
-        player.setVelocityX(speed);
-        player.setFlipX(false);
-    }
-
-    if (spaceKey.isDown && player.body.touching.down) {
-        player.setVelocityY(-550);
-    }
-
-    // only process state animation rules if the player is not recovering from a hit
+    // Only allow player movement control if they are not frozen in the hurt state
     if (!isHurt) {
+        player.setVelocityX(0);
+
+        if (keys.A.isDown) {
+            player.setVelocityX(-speed);
+            player.setFlipX(true);
+        }
+        else if (keys.D.isDown) {
+            player.setVelocityX(speed);
+            player.setFlipX(false);
+        }
+
+        if (spaceKey.isDown && player.body.touching.down) {
+            player.setVelocityY(-500);
+        }
+
+        // process movement state animations cleanly
         if (!player.body.touching.down) {
             player.anims.play('jump', true);
         }
@@ -198,6 +220,15 @@ function update() {
             player.anims.play('idle', true);
         }
     }
+
+    // Flip enemy sprite based on its movement direction
+    enemies.getChildren().forEach((enemy) => {
+        if (enemy.body.velocity.x > 0) {
+            enemy.setFlipX(false);
+        } else if (enemy.body.velocity.x < 0) {
+            enemy.setFlipX(true);
+        }
+    });
 }
 
 function updateTimer() {
@@ -210,20 +241,20 @@ function updateTimer() {
     }
 
     if (timeLeft <= 0) {
-    timerEvent.remove();
-    gameOver = true;
-    this.physics.pause();
+        timerEvent.remove();
+        gameOver = true;
+        this.physics.pause();
 
-    this.add.text(300, 250, 'TIME\'S UP!', {
-        fontSize: '40px',
-        fill: '#ff0000'
-    });
+        this.add.text(300, 250, 'TIME\'S UP!', {
+            fontSize: '40px',
+            fill: '#ff0000'
+        });
 
-    this.add.text(280, 320, 'Stars Collected: ' + score, {
-        fontSize: '30px',
-        fill: '#ffffff'
-    });
-}
+        this.add.text(280, 320, 'Stars Collected: ' + score, {
+            fontSize: '30px',
+            fill: '#ffffff'
+        });
+    }
 }
 
 // spawn star
@@ -239,6 +270,18 @@ function spawnStar(scene) {
     star.setCollideWorldBounds(true);
 }
 
+// Helper to spawn the left/right moving patrol enemy (Limited to a maximum of 1)
+function spawnPatrolEnemy(scene) {
+    if (enemies.countActive(true) === 0) {
+        let enemy = enemies.create(100, 500, 'enemyPatrol');
+        enemy.setCollideWorldBounds(true);
+        enemy.setBounce(1, 0); 
+        enemy.setVelocityX(80); 
+        
+        enemy.anims.play('enemy_walk');
+    }
+}
+
 // collect star
 function collectStar(player, star) {
     star.disableBody(true, true);
@@ -248,7 +291,53 @@ function collectStar(player, star) {
 
     spawnStar(this);
 
-    if (score % 5 === 0) {
-        player.setScale(player.scale + 0.1);
+    // if (score % 5 === 0) {
+    //     player.setScale(player.scale + 0.1);
+    // }
+}
+
+// player damage handling when colliding with patrol enemy
+function hitEnemy(player, enemy) {
+    if (isHurt) return;
+
+    lives--;
+
+    let currentHearts = heartsGroup.getChildren();
+    if (currentHearts.length > 0) {
+        currentHearts[currentHearts.length - 1].destroy();
+    }
+
+    if (lives <= 0) {
+        this.physics.pause();
+        player.setVisible(false);
+        gameOver = true;
+        this.add.image(400, 300, 'gameOverScreen');
+    } else {
+        isHurt = true;
+        player.anims.stop();
+        player.setTexture('playerHurt');
+
+        // Knock back velocity
+        let knockbackDir = player.x < enemy.x ? -200 : 200;
+        player.setVelocityX(knockbackDir);
+        player.setVelocityY(-250);
+
+        // This tween causes the player to flicker for exactly 1000ms (10 repeats * 100ms duration)
+        this.tweens.add({
+            targets: player,
+            alpha: 0.2,
+            duration: 50,
+            yoyo: true,
+            repeat: 9, 
+            onComplete: () => {
+                // When the flickering is 100% complete, revert everything cleanly
+                if (!gameOver) {
+                    isHurt = false;
+                    player.alpha = 1; // Explicitly forces opacity back to normal solid values
+                    player.setTexture('player');
+                    player.anims.play('idle', true);
+                }
+            }
+        });
     }
 }
