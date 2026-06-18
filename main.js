@@ -75,11 +75,11 @@ function preload() {
         frameHeight: 64
     });
 
-    this.load.spritesheet('starParticle', 'assets/starParticle.png', {
+    this.load.spritesheet('starParticle', 'assets/starParticle_spritesheet.png', {
         frameWidth: 16,
         frameHeight: 16
     });
-    this.load.spritesheet('stompParticle', 'assets/stompParticle.png', {
+    this.load.spritesheet('stompParticle', 'assets/stompParticle_spritesheet.png', {
         frameWidth: 16,
         frameHeight: 16
     });
