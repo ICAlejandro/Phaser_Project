@@ -137,7 +137,7 @@ function create() {
     }
 
     // timer
-    timerText = this.add(700, 10, 'Time: 60', {
+    timerText = this.add.text(700, 10, 'Time: 60', {
         fontSize: '20px',
         fill: '#ffffff'
     });
