@@ -76,12 +76,12 @@ function preload() {
     });
 
     this.load.spritesheet('starParticle', 'assets/starParticle_spritesheet.png', {
-        frameWidth: 16,
-        frameHeight: 16
+        frameWidth: 64,
+        frameHeight: 64
     });
     this.load.spritesheet('stompParticle', 'assets/stompParticle_spritesheet.png', {
-        frameWidth: 16,
-        frameHeight: 16
+        frameWidth: 64,
+        frameHeight: 64
     });
 
     // --- LOAD SOUND EFFECTS ---
