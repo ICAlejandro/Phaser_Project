@@ -201,15 +201,25 @@ function updateTimer() {
     timeLeft--;
     timerText.setText('Time: ' + timeLeft);
 
-    if (timeLeft <= 10) {
-        timerEvent.remove();
-        gameOver = true;
-        this.physics.pause();
-        this.add.text(300, 250, 'TIME\'S UP!', {
-            fontSize: '40px',
-            fill: '#ff0000'
-        });
+     if (timeLeft <= 10) {
+        timerText.setColor('#ff0000');
     }
+
+    if (timeLeft <= 0) {
+    timerEvent.remove();
+    gameOver = true;
+    this.physics.pause();
+
+    this.add.text(300, 250, 'TIME\'S UP!', {
+        fontSize: '40px',
+        fill: '#ff0000'
+    });
+
+    this.add.text(280, 320, 'Stars Collected: ' + score, {
+        fontSize: '30px',
+        fill: '#ffffff'
+    });
+}
 }
 
 // spawn star
