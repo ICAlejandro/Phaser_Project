@@ -241,8 +241,6 @@ function update() {
         isMovingHorizontally = true;
     }
     else {
-        // Only arrest horizontal movement if user isn't holding left/right keys 
-        // This ensures sudden knockbacks don't glide indefinitely if player lets go of inputs
         player.setVelocityX(0);
     }
 
@@ -286,7 +284,7 @@ function update() {
         if (dist < 200) {
             let dir = player.x < enemy.x ? -1 : 1;
             enemy.setVelocityX(dir * 120);
-            enemy.setFlipX(dir < 0);
+            enemy.setFlipX(dir > 0);
             enemy.anims.play('enemy_chase_run', true);
         } else {
             enemy.setVelocityX(0);
