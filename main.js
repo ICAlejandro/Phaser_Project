@@ -17,7 +17,7 @@ const config = {
 };
 
 const game = new Phaser.Game(config);
-const STAR_GOAL = 15;
+const STAR_GOAL = 10; //star goal score
 let highScore = 0;
 
 let player;
