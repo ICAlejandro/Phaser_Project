@@ -17,7 +17,7 @@ const config = {
 };
 
 const game = new Phaser.Game(config);
-const STAR_GOAL = 10; //star goal score
+const STAR_GOAL = 10;
 let highScore = 0;
 
 let player;
@@ -107,7 +107,6 @@ function preload() {
 function create() {
     this.add.image(400, 300, 'background');
     highScore = Number(localStorage.getItem('starHighScore')) || 0;
-    // Play and loop background music smoothly
     bgm = this.sound.add('bgm', { loop: true, volume: volumeBgm });
     bgm.play();
 
@@ -236,7 +235,7 @@ function create() {
     });
 
     // star counter
-    scoreText = this.add.text(10, 75, 'Stars: ' + score, {
+    scoreText = this.add.text(10, 75, 'Stars: ' + score + ' / ' + STAR_GOAL,{
         fontSize: '20px',
         fill: '#0e0846'
     });
