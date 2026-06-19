@@ -17,6 +17,8 @@ const config = {
 };
 
 const game = new Phaser.Game(config);
+const STAR_GOAL = 15;
+let highScore = 0;
 
 let player;
 let stars;
@@ -58,6 +60,7 @@ function preload() {
     this.load.image('background', 'assets/background.png');
     this.load.image('gameOverScreen', 'assets/game_over_screen.png');
     this.load.image('playerHurt', 'assets/player_hurt.png');
+    this.load.image('victoryScreen', 'assets/victory_screen.png');
 
     this.load.spritesheet('player', 'assets/player_spritesheet.png', {
         frameWidth: 64,
@@ -103,7 +106,7 @@ function preload() {
 
 function create() {
     this.add.image(400, 300, 'background');
-
+    highScore = Number(localStorage.getItem('starHighScore')) || 0;
     // Play and loop background music smoothly
     bgm = this.sound.add('bgm', { loop: true, volume: volumeBgm });
     bgm.play();
@@ -363,17 +366,14 @@ function updateTimer() {
         gameOver = true;
         this.physics.pause();
         
-        if (bgm) bgm.stop(); // Stops background music when timer runs out
+        if (bgm) bgm.stop();
 
-        this.add.text(300, 200, 'TIME\'S UP!', {
-            fontSize: '40px',
-            fill: '#ff0000'
-        });
+        this.add.image(400, 300, 'gameOverScreen');
 
-        this.add.text(280, 270, 'Stars Collected: ' + score, {
-            fontSize: '30px',
+        this.add.text(400, 360, 'Time ran out! Stars Collected: ' + score + ' / ' + STAR_GOAL, {
+            fontSize: '24px',
             fill: '#ffffff'
-        });
+        }).setOrigin(0.5);
 
         createRetryButton(this);
     }
@@ -419,8 +419,40 @@ function collectStar(player, star) {
     let p = this.add.sprite(x, y, 'starParticle');
     p.anims.play('star_particle_anim');
     p.once('animationcomplete', () => p.destroy());
+
+    if (score >= STAR_GOAL) {
+        triggerVictory.call(this);
+        return;
+    }
     
     spawnStar(this);
+}
+
+function triggerVictory() {
+    gameOver = true;
+    if (timerEvent) timerEvent.remove();
+    this.physics.pause();
+
+    if (bgm) bgm.stop();
+
+    if (score > highScore) {
+        highScore = score;
+        localStorage.setItem('starHighScore', highScore);
+    }
+
+    this.add.image(400, 300, 'victoryScreen');
+
+    this.add.text(400, 340, 'Stars Collected: ' + score, {
+        fontSize: '28px',
+        fill: '#ffffff'
+    }).setOrigin(0.5);
+
+    this.add.text(400, 380, 'High Score: ' + highScore, {
+        fontSize: '24px',
+        fill: '#ffff00'
+    }).setOrigin(0.5);
+
+    createRetryButton(this);
 }
 
 // player damage handling when colliding with patrol enemy
@@ -445,6 +477,11 @@ function hitEnemy(player, enemy) {
         if (bgm) bgm.stop();
         
         this.add.image(400, 300, 'gameOverScreen');
+
+        this.add.text(400, 360, 'Out of lives! Stars Collected: ' + score + ' / ' + STAR_GOAL, {
+            fontSize: '24px',
+            fill: '#ffffff'
+        }).setOrigin(0.5);
         createRetryButton(this);
     } else {
         isHurt = true;
