@@ -632,7 +632,7 @@ function createRetryButton(scene) {
     const btnWidth = 240;
     const btnHeight = 60;
     const btnX = 400;
-    const btnY = 400;
+    const btnY = 460;
     const cornerRadius = 15; 
 
     let bgGraphics = scene.add.graphics();
